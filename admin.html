@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel — AdLens</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #09090f;
+      --surface: #12121e;
+      --surface2: #1a1a2e;
+      --border: rgba(255,255,255,0.07);
+      --accent: #00f0c8;
+      --text: #e8e8f0;
+      --muted: #6b6b8a;
+      --male: #4fc3f7;
+      --female: #f48fb1;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --error: #ef4444;
+    }
+
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.2rem 2.5rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(9,9,15,0.9);
+      backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.03em; }
+    .logo span { color: var(--accent); }
+    nav .nav-links { display: flex; gap: 1rem; }
+    nav a { text-decoration: none; color: var(--muted); font-size: 0.875rem; font-weight: 500; padding: 0.4rem 0.9rem; border-radius: 6px; transition: all 0.2s; }
+    nav a:hover { color: var(--text); background: var(--surface); }
+    nav a.active { color: var(--accent); }
+
+    /* LOGIN */
+    .login-overlay {
+      position: fixed; inset: 0;
+      background: rgba(9,9,15,0.97);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200;
+    }
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .login-box h2 { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .login-box p { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    .login-box input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.2s;
+      text-align: left;
+    }
+    .login-box input:focus { border-color: var(--accent); }
+    .login-btn {
+      width: 100%;
+      padding: 0.875rem;
+      background: var(--accent);
+      color: #09090f;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .login-btn:hover { background: #00d4b0; }
+    .login-error { color: var(--error); font-size: 0.82rem; margin-top: 0.5rem; min-height: 1.2rem; }
+    .login-hint { color: var(--muted); font-size: 0.75rem; margin-top: 0.75rem; }
+
+    /* ADMIN CONTENT */
+    .admin-page { max-width: 1200px; margin: 0 auto; padding: 3rem 2rem; }
+
+    .admin-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 2rem; flex-wrap: gap;
+    }
+    .admin-header h1 { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em; }
+    .admin-header .sub { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+    .logout-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s;
+    }
+    .logout-btn:hover { color: var(--error); border-color: var(--error); }
+
+    /* STATS */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+    }
+    .stat-card .stat-label { font-size: 0.78rem; color: var(--muted); font-weight: 500; margin-bottom: 0.3rem; }
+    .stat-card .stat-num { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; }
+    .stat-card.pending .stat-num { color: var(--warning); }
+    .stat-card.approved .stat-num { color: var(--success); }
+    .stat-card.rejected .stat-num { color: var(--error); }
+    .stat-card.total .stat-num { color: var(--accent); }
+
+    /* FILTER TABS */
+    .filter-tabs {
+      display: flex; gap: 0.5rem; margin-bottom: 1.5rem;
+    }
+    .tab-btn {
+      padding: 0.5rem 1.1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .tab-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+    .tab-btn.active { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+
+    /* AD TABLE */
+    .ads-table-wrap { overflow-x: auto; border-radius: 16px; border: 1px solid var(--border); }
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    thead th {
+      background: var(--surface2);
+      padding: 0.875rem 1.25rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody td { padding: 1rem 1.25rem; vertical-align: middle; }
+
+    .ad-emoji-cell { font-size: 1.8rem; }
+    .ad-name { font-weight: 600; margin-bottom: 0.2rem; }
+    .ad-brand { font-size: 0.78rem; color: var(--muted); }
+    .ad-desc-cell { color: var(--muted); font-size: 0.82rem; max-width: 280px; line-height: 1.5; }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .status-badge.pending { background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+    .status-badge.approved { background: rgba(34,197,94,0.12); color: var(--success); border: 1px solid rgba(34,197,94,0.25); }
+    .status-badge.rejected { background: rgba(239,68,68,0.12); color: var(--error); border: 1px solid rgba(239,68,68,0.25); }
+
+    .target-pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .target-pill.male { background: rgba(79,195,247,0.12); color: var(--male); }
+    .target-pill.female { background: rgba(244,143,177,0.12); color: var(--female); }
+    .target-pill.all { background: rgba(0,240,200,0.08); color: var(--accent); }
+
+    .action-btns { display: flex; gap: 0.5rem; }
+    .act-btn {
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+    .act-btn.approve { background: rgba(34,197,94,0.15); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
+    .act-btn.approve:hover { background: var(--success); color: #fff; }
+    .act-btn.reject { background: rgba(239,68,68,0.1); color: var(--error); border: 1px solid rgba(239,68,68,0.25); }
+    .act-btn.reject:hover { background: var(--error); color: #fff; }
+    .act-btn.delete { background: rgba(107,107,138,0.1); color: var(--muted); border: 1px solid var(--border); }
+    .act-btn.delete:hover { background: rgba(239,68,68,0.15); color: var(--error); }
+
+    .empty-row td { text-align: center; padding: 3rem; color: var(--muted); font-size: 0.9rem; }
+
+    .toast {
+      position: fixed; bottom: 2rem; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--success); color: #fff;
+      padding: 0.875rem 1.5rem; border-radius: 10px;
+      font-weight: 600; font-size: 0.9rem;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      z-index: 999; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.error { background: var(--error); }
+
+    .date-cell { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Ad<span>Lens</span></div>
+  <div class="nav-links">
+    <a href="index.html">Live Display</a>
+    <a href="submit.html">Submit Ad</a>
+    <a href="admin.html" class="active">Admin Panel</a>
+  </div>
+</nav>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div style="font-size:2.5rem; margin-bottom:0.75rem;">🔐</div>
+    <h2>Admin Login</h2>
+    <p>Restricted access — admins only.</p>
+    <input type="text" id="adminUser" placeholder="Username" autocomplete="off"/>
+    <input type="password" id="adminPass" placeholder="Password"/>
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" id="loginBtn">Sign In →</button>
+    <div class="login-hint">Demo credentials: <strong>admin</strong> / <strong>admin123</strong></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-page" id="adminContent" style="display:none;">
+  <div class="admin-header">
+    <div>
+      <h1>Ad Review Panel</h1>
+      <div class="sub">Manage submitted advertisements</div>
+    </div>
+    <button class="logout-btn" id="logoutBtn">Sign Out</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- FILTERS -->
+  <div class="filter-tabs">
+    <button class="tab-btn active" data-filter="all">All</button>
+    <button class="tab-btn" data-filter="pending">⏳ Pending</button>
+    <button class="tab-btn" data-filter="approved">✅ Approved</button>
+    <button class="tab-btn" data-filter="rejected">❌ Rejected</button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="ads-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Ad</th>
+          <th>Details</th>
+          <th>Target</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="adsTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const ADMIN_USER = 'admin';
+  const ADMIN_PASS = 'admin123';
+
+  // ─── Auth ────────────────────────────────────────────────────────────────────
+  let isLoggedIn = sessionStorage.getItem('adlens_admin') === 'true';
+
+  function checkAuth() {
+    if (isLoggedIn) {
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('adminContent').style.display = 'block';
+      renderAll();
+    }
+  }
+
+  document.getElementById('loginBtn').onclick = () => {
+    const user = document.getElementById('adminUser').value.trim();
+    const pass = document.getElementById('adminPass').value;
+    if (user === ADMIN_USER && pass === ADMIN_PASS) {
+      sessionStorage.setItem('adlens_admin', 'true');
+      isLoggedIn = true;
+      checkAuth();
+    } else {
+      document.getElementById('loginError').textContent = 'Invalid credentials. Try admin / admin123';
+    }
+  };
+
+  document.getElementById('adminPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('loginBtn').click();
+  });
+
+  document.getElementById('logoutBtn').onclick = () => {
+    sessionStorage.removeItem('adlens_admin');
+    isLoggedIn = false;
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('adminContent').style.display = 'none';
+  };
+
+  // ─── Store ───────────────────────────────────────────────────────────────────
+  function getAds() {
+    try { return JSON.parse(localStorage.getItem('adlens_ads') || '[]'); }
+    catch { return []; }
+  }
+  function saveAds(ads) { localStorage.setItem('adlens_ads', JSON.stringify(ads)); }
+
+  function setStatus(id, status) {
+    const ads = getAds().map(a => a.id === id ? { ...a, status } : a);
+    saveAds(ads);
+    renderAll();
+    showToast(status === 'approved' ? '✅ Ad approved and published!' : '❌ Ad rejected.', status === 'rejected');
+  }
+
+  function deleteAd(id) {
+    if (!confirm('Delete this ad permanently?')) return;
+    const ads = getAds().filter(a => a.id !== id);
+    saveAds(ads);
+    renderAll();
+    showToast('🗑️ Ad deleted.', true);
+  }
+
+  // ─── Render ──────────────────────────────────────────────────────────────────
+  let activeFilter = 'all';
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      renderTable();
+    };
+  });
+
+  function renderStats() {
+    const ads = getAds();
+    const counts = {
+      total: ads.length,
+      pending: ads.filter(a => a.status === 'pending').length,
+      approved: ads.filter(a => a.status === 'approved').length,
+      rejected: ads.filter(a => a.status === 'rejected').length,
+    };
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stat-card total"><div class="stat-label">Total Submitted</div><div class="stat-num">${counts.total}</div></div>
+      <div class="stat-card pending"><div class="stat-label">Pending Review</div><div class="stat-num">${counts.pending}</div></div>
+      <div class="stat-card approved"><div class="stat-label">Live / Approved</div><div class="stat-num">${counts.approved}</div></div>
+      <div class="stat-card rejected"><div class="stat-label">Rejected</div><div class="stat-num">${counts.rejected}</div></div>
+    `;
+  }
+
+  function renderTable() {
+    const ads = getAds();
+    const filtered = activeFilter === 'all' ? ads : ads.filter(a => a.status === activeFilter);
+    const tbody = document.getElementById('adsTableBody');
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="6">No ads in this category.</td></tr>`;
+      return;
+    }
+
+    filtered.sort((a, b) => b.submittedAt - a.submittedAt);
+
+    tbody.innerHTML = filtered.map(ad => `
+      <tr>
+        <td class="ad-emoji-cell">${ad.emoji || '📢'}</td>
+        <td>
+          <div class="ad-name">${ad.title}</div>
+          <div class="ad-brand">${ad.brand || '—'}</div>
+        </td>
+        <td class="ad-desc-cell">${ad.description}</td>
+        <td>
+          <span class="target-pill ${ad.target}">
+            ${ad.target === 'male' ? '♂ Men' : ad.target === 'female' ? '♀ Women' : '👥 All'}
+          </span>
+        </td>
+        <td>
+          <span class="status-badge ${ad.status}">
+            ${ad.status === 'pending' ? '⏳ Pending' : ad.status === 'approved' ? '✅ Live' : '❌ Rejected'}
+          </span>
+        </td>
+        <td class="date-cell">${formatDate(ad.submittedAt)}</td>
+        <td>
+          <div class="action-btns">
+            ${ad.status !== 'approved' ? `<button class="act-btn approve" onclick="setStatus('${ad.id}','approved')">Approve</button>` : ''}
+            ${ad.status !== 'rejected' ? `<button class="act-btn reject" onclick="setStatus('${ad.id}','rejected')">Reject</button>` : ''}
+            <button class="act-btn delete" onclick="deleteAd('${ad.id}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderAll() {
+    renderStats();
+    renderTable();
+  }
+
+  function formatDate(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+           d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (isError ? ' error' : '') + ' show';
+    setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+
+  checkAuth();
+</script>
+</body>
+</html>
